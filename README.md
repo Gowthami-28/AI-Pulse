@@ -47,6 +47,8 @@ Personal Email Update
 
 ## Project Structure
 
+```text
+
 AI-Pulse/
 │
 ├── src/
@@ -69,32 +71,48 @@ AI-Pulse/
 ├── requirements.txt
 └── README.md
 
+```
+
 ## Setup
 
 1. Create a virtual environment
 
+```text
+
    python -m venv .venv
+```
 
 2. Activate the virtual environment
+   ```text 
 
    .\.venv\Scripts\Activate.ps1
 
-3. Install dependencies
+   ```
 
+4. Install dependencies
+
+```text
    python -m pip install -r requirements.txt
+```
 
-4. Configure environment variables
+5. Configure environment variables
 
    Create a .env file:
+```text
 
    GEMINI_API_KEY=your_gemini_api_key
    RESEND_API_KEY=your_resend_api_key
+```
 
-5. Run AI Pulse
+7. Run AI Pulse
+```text
 
    python src/main.py
+```
 
-## Current Limitations   
+## Current Limitations  
+
+```text
  
 Currently uses only the Google AI Blog RSS feed.
 Does not yet have strict freshness filtering.
@@ -103,7 +121,11 @@ Currently runs manually.
 Email formatting is currently plain text.
 Not yet deployed to the cloud.
 
+```
+
 ## Planned Improvements
+
+```text
 
 Add multiple trusted AI/ML sources.
 Add freshness and date filtering.
@@ -115,6 +137,11 @@ Dockerize the application.
 Deploy to Azure.
 Add logging and monitoring.
 
+```
+
 ## Goal
 
+```text
+
 The long-term goal of AI Pulse is to become a personal AI/ML assistant that automatically discovers important AI developments, analyzes them, determines what is worth my attention, and helps me keep learning without having to manually search through AI news every day.
+```
