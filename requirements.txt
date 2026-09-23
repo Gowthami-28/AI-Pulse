@@ -1,0 +1,14 @@
+# RSS feed parsing
+feedparser>=6.0,<7.0
+
+# Google Gemini API
+google-genai
+
+# Environment variables
+python-dotenv
+
+# Article content extraction
+trafilatura
+
+# Email delivery
+resend
