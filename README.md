@@ -114,12 +114,12 @@ AI-Pulse/
 
 ```text
  
--Currently uses only the Google AI Blog RSS feed.
--Does not yet have strict freshness filtering.
--Does not yet track previously processed articles.
--Currently runs manually.
--Email formatting is currently plain text.
--Not yet deployed to the cloud.
+- Currently uses only the Google AI Blog RSS feed.
+- Does not yet have strict freshness filtering.
+- Does not yet track previously processed articles.
+- Currently runs manually.
+- Email formatting is currently plain text.
+- Not yet deployed to the cloud.
 
 ```
 
@@ -127,15 +127,15 @@ AI-Pulse/
 
 ```text
 
--Add multiple trusted AI/ML sources.
--Add freshness and date filtering.
--Add duplicate detection.
--Add persistent article history.
--Improve error handling and retry mechanisms.
--Add daily automated execution.
--Dockerize the application.
--Deploy to Azure.
--Add logging and monitoring.
+- Add multiple trusted AI/ML sources.
+- Add freshness and date filtering.
+- Add duplicate detection.
+- Add persistent article history.
+- Improve error handling and retry mechanisms.
+- Add daily automated execution.
+- Dockerize the application.
+- Deploy to Azure.
+- Add logging and monitoring.
 
 ```
 
