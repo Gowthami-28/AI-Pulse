@@ -43,6 +43,8 @@ Resend
         ↓
 Personal Email Update
 
+```
+
 ## Project Structure
 
 AI-Pulse/
