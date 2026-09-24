@@ -2,6 +2,7 @@
 
 from collectors.rss_collector import fetch_articles
 from filters.relevance_filter import filter_articles
+from filters.freshness_filter import filter_fresh_articles
 from analyzer.gemini_analyzer import analyze_article, GeminiQuotaError
 from ranking.rank_articles import rank_articles
 from email_builder import build_email
@@ -12,6 +13,7 @@ from email_sender import send_email
 def main() -> None:
     """Fetch, filter, analyze, and rank articles."""
     articles = fetch_articles()
+    articles = filter_fresh_articles(articles)
 
     print(f"Total articles collected: {len(articles)}")
 
