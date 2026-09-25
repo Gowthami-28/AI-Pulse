@@ -1,91 +1,162 @@
-"""Entry point for the AI Pulse content-collection demo."""
+"""Entry point for the AI Pulse pipeline."""
 
-from collectors.rss_collector import fetch_articles
-from filters.relevance_filter import filter_articles
-from filters.freshness_filter import filter_fresh_articles
-from analyzer.gemini_analyzer import analyze_article, GeminiQuotaError
-from ranking.rank_articles import rank_articles
-from email_builder import build_email
-from email_sender import send_email
-
+from src.collectors.rss_collector import fetch_articles
+from src.filters.relevance_filter import filter_articles
+from src.filters.recency_filter import filter_recent_articles
+from src.filters.deduplication_filter import remove_duplicates
+from src.analyzer.gemini_analyzer import analyze_article, GeminiQuotaError
+from src.ranking.rank_articles import rank_articles
+from src.email_builder import build_email
+from src.email_sender import send_email
 
 
 def main() -> None:
-    """Fetch, filter, analyze, and rank articles."""
+    """Fetch, filter, analyze, rank, and email articles."""
+
+    # ---------------------------------------------------------
+    # 1. Collect articles
+    # ---------------------------------------------------------
+
     articles = fetch_articles()
-    articles = filter_fresh_articles(articles)
 
-    print(f"Total articles collected: {len(articles)}")
+    print(
+        f"Total articles collected: {len(articles)}"
+    )
 
-    relevant_articles = filter_articles(articles)
+    # ---------------------------------------------------------
+    # 2. Recency filter
+    # ---------------------------------------------------------
 
-    print(f"Relevant articles: {len(relevant_articles)}")
+    recent_articles = filter_recent_articles(
+        articles
+    )
+
+    print(
+        f"Recent articles: {len(recent_articles)}"
+    )
+
+    # ---------------------------------------------------------
+    # 3. Remove duplicates
+    # ---------------------------------------------------------
+
+    unique_articles = remove_duplicates(
+        recent_articles
+    )
+
+    print(
+        f"Unique recent articles: {len(unique_articles)}"
+    )
+
+    # ---------------------------------------------------------
+    # 4. Relevance filter
+    # ---------------------------------------------------------
+
+    relevant_articles = filter_articles(
+        unique_articles
+    )
+
+    print(
+        f"Relevant articles: {len(relevant_articles)}"
+    )
+
+    # ---------------------------------------------------------
+    # 5. Gemini analysis
+    # ---------------------------------------------------------
 
     analyzed_articles = []
 
     for article in relevant_articles:
+
         try:
-            analysis = analyze_article(article)
+
+            analysis = analyze_article(
+                article
+            )
+
             article["analysis"] = analysis
-            analyzed_articles.append(article)
+
+            analyzed_articles.append(
+                article
+            )
 
         except GeminiQuotaError as error:
-            print("\nGemini API quota exceeded.")
-            print(f"Error: {error}")
-            print("Stopping further API requests.")
+
+            print(
+                "\nGemini API quota exceeded."
+            )
+
+            print(
+                f"Error: {error}"
+            )
+
+            print(
+                "Stopping further API requests."
+            )
+
             break
 
         except Exception as error:
-            print(f"\nCould not analyze: {article['title']}")
-            print(f"Error: {error}")
+
+            print(
+                f"\nCould not analyze: "
+                f"{article['title']}"
+            )
+
+            print(
+                f"Error: {error}"
+            )
+
             continue
 
-    print(f"\nSuccessfully analyzed: {len(analyzed_articles)}")
+    print(
+        f"\nSuccessfully analyzed: "
+        f"{len(analyzed_articles)}"
+    )
+
+    # ---------------------------------------------------------
+    # 6. Stop if no articles were analyzed
+    # ---------------------------------------------------------
 
     if not analyzed_articles:
-        print("No articles were successfully analyzed.")
+
+        print(
+            "No articles were successfully analyzed."
+        )
+
         return
 
-    
-    ranked_articles = rank_articles(analyzed_articles)
-    email_content = build_email(ranked_articles)
-    send_email(email_content)
+    # ---------------------------------------------------------
+    # 7. Rank articles
+    # ---------------------------------------------------------
 
-    for article in ranked_articles:
-        analysis = article["analysis"]
+    ranked_articles = rank_articles(
+        analyzed_articles
+    )
 
-        print(f"\n{'=' * 60}")
-        print(f"TITLE: {article['title']}")
-        print(f"SCORE: {analysis['relevance_score']}")
-        print(f"RECOMMENDATION: {analysis['recommendation']}")
+    print(
+        f"Ranked articles: "
+        f"{len(ranked_articles)}"
+    )
 
-        print("\nSUMMARY:")
-        print(analysis["summary"])
+    # ---------------------------------------------------------
+    # 8. Build email
+    # ---------------------------------------------------------
 
-        print("\nDEFINITION:")
-        print(analysis["definition"])
+    email_content = build_email(
+        ranked_articles
+    )
 
-        print("\nKEY CONCEPTS:")
-        for concept in analysis["key_concepts"]:
-            print(f"- {concept}")
+    # ---------------------------------------------------------
+    # 9. Send email
+    # ---------------------------------------------------------
 
-        print("\nADVANTAGES:")
-        for advantage in analysis["advantages"]:
-            print(f"- {advantage}")
+    send_email(
+        email_content
+    )
 
-        print("\nDISADVANTAGES / LIMITATIONS:")
-        for disadvantage in analysis["disadvantages"]:
-            print(f"- {disadvantage}")
-
-        print("\nPRACTICAL EXAMPLE:")
-        print(analysis["practical_example"])
-
-        print("\nWHAT TO LEARN:")
-        for topic in analysis["what_to_learn"]:
-            print(f"- {topic}")
-
-        print("\nWHY IT MATTERS:")
-        print(analysis["why_it_matters"])
+    print(
+        "\nAI Pulse email sent successfully."
+    )
 
 
 if __name__ == "__main__":
