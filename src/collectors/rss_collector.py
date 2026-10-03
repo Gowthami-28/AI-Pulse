@@ -1,81 +1,84 @@
 """Collect AI articles from multiple official RSS feeds."""
 
-from typing import Dict, List
+import calendar
 import gzip
+import html
+import re
 import urllib.request
+from datetime import datetime, timezone
+from typing import Dict, List
 
 import feedparser
 
+HEADERS = {"User-Agent": "Mozilla/5.0 (AI-Pulse feed reader)"}
 
+# max_age_hours: 48 for news-style feeds, 168 for slower blogs
 RSS_SOURCES = {
-    "Google AI Blog": "https://blog.google/technology/ai/rss/",
-    "OpenAI": "https://openai.com/news/rss.xml",
-    "Google DeepMind": "https://deepmind.google/blog/feed/basic/",
-    "Hugging Face": "https://huggingface.co/blog/feed.xml",
-    "NVIDIA Developer Blog": "https://developer.nvidia.com/blog/feed/",
+    "Google AI Blog": {"url": "https://blog.google/technology/ai/rss/", "max_age_hours": 48},
+    "OpenAI": {"url": "https://openai.com/news/rss.xml", "max_age_hours": 48},
+    "Google DeepMind": {"url": "https://deepmind.google/blog/feed/basic/", "max_age_hours": 168},
+    "Hugging Face": {"url": "https://huggingface.co/blog/feed.xml", "max_age_hours": 168},
+    "NVIDIA Developer Blog": {"url": "https://developer.nvidia.com/blog/feed/", "max_age_hours": 168},
 }
 
 
-def fetch_articles() -> List[Dict[str, str]]:
-    """Fetch articles from all configured RSS sources."""
+def _fetch_feed(url: str):
+    req = urllib.request.Request(url, headers=HEADERS)
+    with urllib.request.urlopen(req, timeout=20) as response:
+        data = response.read()
+    if data.startswith(b"\x1f\x8b"):
+        data = gzip.decompress(data)
+    return feedparser.parse(data)
 
+
+def _clean(text: str, limit: int = 600) -> str:
+    text = re.sub(r"<[^>]+>", " ", text or "")
+    text = html.unescape(text)
+    return re.sub(r"\s+", " ", text).strip()[:limit]
+
+
+def _iso_date(entry) -> str:
+    parsed = entry.get("published_parsed") or entry.get("updated_parsed")
+    if not parsed:
+        return ""
+    ts = calendar.timegm(parsed)  # struct_time from feedparser is UTC
+    return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+
+
+def fetch_articles() -> List[Dict[str, str]]:
     articles = []
 
-    for source_name, rss_url in RSS_SOURCES.items():
+    for source_name, cfg in RSS_SOURCES.items():
         print(f"Collecting articles from: {source_name}")
 
-        if source_name == "Google DeepMind":
-            with urllib.request.urlopen(rss_url) as response:
-                feed_content = response.read()
-
-            if feed_content.startswith(b"\x1f\x8b"):
-                feed_content = gzip.decompress(feed_content)
-
-            feed = feedparser.parse(feed_content.decode("utf-8"))
-        else:
-            feed = feedparser.parse(rss_url)
-
-        if feed.bozo:
-            print(
-                f"Could not read {source_name} RSS feed: "
-                f"{feed.bozo_exception}"
-            )
+        try:
+            feed = _fetch_feed(cfg["url"])
+        except Exception as error:
+            print(f"  Failed to fetch {source_name}: {error}")
             continue
 
-        for entry in feed.entries:
-            article = {
-                "title": entry.get("title", "Untitled article"),
-                "url": entry.get("link", ""),
-                "publication_date": entry.get(
-                    "published",
-                    entry.get("updated", "Publication date unavailable")
-                ),
-                "description": entry.get(
-                    "summary",
-                    entry.get("description", "")
-                ),
-                "source_name": source_name,
-            }
+        if feed.bozo and not feed.entries:
+            print(f"  Could not read {source_name}: {feed.bozo_exception}")
+            continue
 
-            articles.append(article)
+        print(f"  {len(feed.entries)} entries")
+
+        for entry in feed.entries:
+            url = entry.get("link", "")
+            if not url:
+                continue
+
+            articles.append({
+                "title": entry.get("title", "Untitled article"),
+                "url": url,
+                "publication_date": entry.get("published", entry.get("updated", "")),
+                "published_iso": _iso_date(entry),
+                "description": _clean(entry.get("summary", entry.get("description", ""))),
+                "source_name": source_name,
+                "max_age_hours": cfg["max_age_hours"],
+            })
 
     return articles
-
-
-def print_articles(articles: List[Dict[str, str]]) -> None:
-    """Print article details in a readable format."""
-
-    if not articles:
-        print("No articles were found.")
-        return
-
-    for number, article in enumerate(articles, start=1):
-        print(f"\n{number}. {article['title']}")
-        print(f"   Source: {article['source_name']}")
-        print(f"   Published: {article['publication_date']}")
-        print(f"   URL: {article['url']}")
-        print(f"   Description: {article['description']}")
-
 
 if __name__ == "__main__":
     articles = fetch_articles()

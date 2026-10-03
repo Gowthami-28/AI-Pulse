@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from typing import Any, Dict
 
 from dotenv import load_dotenv
@@ -30,6 +31,8 @@ if not api_key:
     raise ValueError(
         "GEMINI_API_KEY is not set in the environment."
     )
+
+MODEL = "gemini-3.5-flash-lite"
 
 
 # ---------------------------------------------------------
@@ -237,23 +240,91 @@ Do not recommend unrelated learning topics.
 RELEVANCE SCORE
 ============================================================
 
-Score the article for the AI Pulse user's AI/ML learning goals.
+Score this article specifically for an aspiring AI/ML/GenAI
+Engineer who is trying to learn practical technical skills.
+
+The score must reflect the ARTICLE'S ACTUAL TECHNICAL
+LEARNING VALUE.
 
 Use an integer from 1 to 10.
 
-10 = directly useful for current AI/ML/GenAI engineering learning.
+Scoring criteria:
 
-1 = little or no useful technical learning value.
+9-10:
+The article contains substantial technical content that is
+directly useful for AI engineering.
 
-Base the score on the article's actual technical content.
+Examples:
+- LLM architecture or implementation
+- AI agent architecture
+- RAG systems
+- model training or fine-tuning
+- inference optimization
+- multimodal AI
+- embeddings or vector databases
+- model evaluation
+- AI infrastructure
+- MLOps
+- deployment of AI systems
+- tool/function calling
+- practical AI engineering implementation
 
-Do not score the article based on:
+7-8:
+The article contains meaningful technical AI content and
+would be useful to learn, but it is not an immediate
+priority or does not provide as much technical depth as
+a 9-10 article.
 
-- company popularity
-- product popularity
-- sales performance
-- media attention
-- general business success
+5-6:
+The article contains some relevant AI or technical
+information, but the learning value is limited.
+
+3-4:
+The article mentions AI or uses AI technology, but the
+article is primarily about business results, product
+promotion, company news, marketing, or general technology
+rather than technical learning.
+
+1-2:
+The article provides little or no useful AI/ML/GenAI
+technical learning value.
+
+IMPORTANT SCORING RULES:
+
+1. Do NOT increase the score simply because the article
+   mentions a keyword such as "AI", "LLM", "Gemini",
+   "agent", "RAG", or "machine learning".
+
+2. Do NOT increase the score because the company is
+   important, popular, or well known.
+
+3. Do NOT increase the score because the article reports
+   impressive sales, revenue, adoption, productivity,
+   customer growth, or business results.
+
+4. A product announcement is NOT automatically highly
+   relevant. Give a high score only when the article
+   contains meaningful technical information that an
+   AI Engineer could learn from.
+
+5. A company case study should receive a high score only
+   when it contains substantial technical implementation
+   details.
+
+6. If the article only mentions an AI technology without
+   explaining or demonstrating meaningful technical
+   concepts, give it a low score.
+
+7. If the article appears relevant only because of a
+   keyword match but its actual content is unrelated to
+   AI/ML/GenAI engineering, give it a score of 1-4.
+
+8. Base the score on the full article content, not only
+   the title or description.
+
+9. Be conservative. When uncertain between two scores,
+   choose the lower score unless the article provides
+   clear technical evidence.
 
 ============================================================
 RECOMMENDATION
@@ -265,16 +336,38 @@ NOW
 LATER
 SKIP
 
-Definitions:
+Use the relevance score together with the following rules.
 
 NOW:
-Directly useful and worth learning now.
+
+Use NOW when the article has a relevance score of 9-10
+AND contains technical material that is directly useful
+for the user's current AI/ML/GenAI engineering learning.
 
 LATER:
-Technically useful but not an immediate learning priority.
+
+Use LATER when the article has a relevance score of 7-8
+and contains genuine technical learning value, but is not
+an immediate learning priority.
 
 SKIP:
-Little useful learning value for the user's AI/ML learning goals.
+
+Use SKIP when the article has a relevance score of 1-6.
+
+Also use SKIP when the article passed the keyword filter
+but the full article does not contain meaningful AI/ML/GenAI
+engineering learning value.
+
+IMPORTANT:
+
+Do not use NOW simply because the article is about a new
+AI product, model, company, or announcement.
+
+Do not use LATER simply because the article contains an
+AI-related keyword.
+
+The recommendation must reflect the article's technical
+learning value for an aspiring AI Engineer.
 
 Do not use the recommendation to judge the company,
 product, or business success.
@@ -353,79 +446,53 @@ FULL ARTICLE CONTENT
 
 
 # ---------------------------------------------------------
+# Recommendation is computed from the score, not the LLM
+# ---------------------------------------------------------
+
+def recommendation_from_score(score: int) -> str:
+    if score >= 9:
+        return "NOW"
+    if score >= 7:
+        return "LATER"
+    return "SKIP"
+
+
+# ---------------------------------------------------------
 # Analyze one article
 # ---------------------------------------------------------
 
 def analyze_article(article: Dict[str, str]) -> Dict[str, Any]:
-    """
-    Extract an article and analyze it using Gemini.
-    """
+    """Extract an article and analyze it using Gemini."""
 
-    # Extract article content
-    article_content = extract_article_content(
-        article["url"]
-    )
+    article_content = extract_article_content(article["url"])
 
     if not article_content:
         raise ValueError(
             f"Could not extract article content: {article['url']}"
         )
 
-    # Limit article size sent to Gemini
     article_content = article_content[:12000]
 
-    # -----------------------------------------------------
-    # Build prompt safely
-    #
-    # We use replace() instead of .format() because the
-    # prompt itself contains JSON braces.
-    # -----------------------------------------------------
-
+    # replace() instead of .format() because the prompt
+    # itself contains JSON braces.
     prompt = ANALYSIS_PROMPT
-
-    prompt = prompt.replace(
-        "{title}",
-        article.get("title", "")
-    )
-
-    prompt = prompt.replace(
-        "{source_name}",
-        article.get("source_name", "")
-    )
-
-    prompt = prompt.replace(
-        "{publication_date}",
-        article.get("publication_date", "")
-    )
-
-    prompt = prompt.replace(
-        "{description}",
-        article.get("description", "")
-    )
-
-    prompt = prompt.replace(
-        "{article_content}",
-        article_content
-    )
-
-    # -----------------------------------------------------
-    # Call Gemini
-    # -----------------------------------------------------
+    prompt = prompt.replace("{title}", str(article.get("title", "")))
+    prompt = prompt.replace("{source_name}", str(article.get("source_name", "")))
+    prompt = prompt.replace("{publication_date}", str(article.get("publication_date", "")))
+    prompt = prompt.replace("{description}", str(article.get("description", "")))
+    prompt = prompt.replace("{article_content}", article_content)
 
     try:
-
         response = client.models.generate_content(
-            model="gemini-3.5-flash-lite",
+            model=MODEL,
             contents=prompt,
             config=types.GenerateContentConfig(
-                response_mime_type="application/json"
+                response_mime_type="application/json",
+                temperature=0.2,
             ),
         )
-
     except Exception as error:
-
         error_text = str(error).lower()
-
         if (
             "resource_exhausted" in error_text
             or "429" in error_text
@@ -434,146 +501,132 @@ def analyze_article(article: Dict[str, str]) -> Dict[str, Any]:
             raise GeminiQuotaError(
                 f"Gemini quota exhausted: {error}"
             ) from error
-
         raise
 
-    # -----------------------------------------------------
-    # Validate response
-    # -----------------------------------------------------
-
-    response_text = response.text.strip()
+    response_text = (response.text or "").strip()
 
     if not response_text:
-        raise ValueError(
-            "Gemini returned an empty response."
-        )
-
-    # -----------------------------------------------------
-    # Parse JSON
-    # -----------------------------------------------------
+        raise ValueError("Gemini returned an empty response.")
 
     try:
-
         result = json.loads(response_text)
-
     except json.JSONDecodeError as error:
-
         print("\nGemini returned invalid JSON:")
         print(response_text)
+        raise ValueError("Gemini returned invalid JSON.") from error
 
-        raise ValueError(
-            "Gemini returned invalid JSON."
-        ) from error
+    try:
+        score = int(result.get("relevance_score", 1))
+    except (TypeError, ValueError):
+        score = 1
+
+    result["relevance_score"] = score
+    result["recommendation"] = recommendation_from_score(score)
 
     return result
 
 
 # ---------------------------------------------------------
-# Main test pipeline
+# Cheap pre-screen (title + description only)
+# ---------------------------------------------------------
+
+SCREEN_PROMPT = """Rate 1-10 the technical learning value of this article
+for an aspiring AI/ML engineer, using ONLY the title and description.
+Concepts (RAG, fine-tuning, MCP, agents, evaluation), model releases
+with concrete specs, and engineering write-ups score 6+.
+Funding, partnerships, events, pricing, customer stories, and generic
+product news score 1-3.
+Return JSON only: {"score": 1, "reason": "one sentence"}"""
+
+
+def screen_article(article: Dict[str, str]) -> int:
+    prompt = (
+        f"{SCREEN_PROMPT}\n\n"
+        f"Title: {article.get('title', '')}\n"
+        f"Description: {article.get('description', '')}"
+    )
+
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.2,
+            ),
+        )
+        return int(json.loads(response.text).get("score", 0))
+
+    except Exception as error:
+        text = str(error).lower()
+        if "429" in text or "quota" in text or "resource_exhausted" in text:
+            raise GeminiQuotaError(str(error)) from error
+        print(f"Screen failed for '{article.get('title')}': {error}")
+        return 0
+
+
+# ---------------------------------------------------------
+# Screen, analyze, and keep only good articles
+# ---------------------------------------------------------
+
+def analyze_relevant(articles, screen_min=6, keep_min=7):
+    results = []
+
+    for article in articles:
+        time.sleep(8)
+        try:
+            screen = screen_article(article)
+
+            if screen < screen_min:
+                print(f"Screened out ({screen}): {article['title']}")
+                continue
+
+            result = analyze_article(article)
+
+        except GeminiQuotaError as error:
+            print(f"Quota hit, stopping: {error}")
+            break
+
+        except Exception as error:
+            print(f"Failed '{article['title']}': {error}")
+            continue
+
+        if result["relevance_score"] < keep_min:
+            print(f"Dropped ({result['relevance_score']}): {article['title']}")
+            continue
+
+        result["url"] = article["url"]
+        results.append(result)
+
+    results.sort(key=lambda r: r["relevance_score"], reverse=True)
+    return results
+
+
+# ---------------------------------------------------------
+# Main pipeline
 # ---------------------------------------------------------
 
 def main() -> None:
-    """
-    Run the AI Pulse article analysis pipeline.
-    """
-
-    # -----------------------------------------------------
-    # 1. Collect articles
-    # -----------------------------------------------------
-
     articles = fetch_articles()
+    recent = filter_recent_articles(articles)
+    unique = remove_duplicates(recent)
+    relevant = filter_articles(unique)
 
-    # -----------------------------------------------------
-    # 2. Recency filter
-    # -----------------------------------------------------
-
-    recent_articles = filter_recent_articles(
-        articles
+    print(
+        f"Collected {len(articles)} | recent {len(recent)} | "
+        f"unique {len(unique)} | keyword-relevant {len(relevant)}"
     )
 
-    # -----------------------------------------------------
-    # 3. Remove duplicate URLs
-    # -----------------------------------------------------
-
-    unique_articles = remove_duplicates(
-        recent_articles
-    )
-
-    # -----------------------------------------------------
-    # 4. AI relevance filter
-    # -----------------------------------------------------
-
-    relevant_articles = filter_articles(
-        unique_articles
-    )
-
-    # -----------------------------------------------------
-    # 5. Stop if nothing relevant was found
-    # -----------------------------------------------------
-
-    if not relevant_articles:
-
-        print(
-            "No relevant recent articles found."
-        )
-
+    if not relevant:
+        print("No relevant recent articles found.")
         return
 
-    # -----------------------------------------------------
-    # 6. Select first article for testing
-    # -----------------------------------------------------
+    results = analyze_relevant(relevant)
 
-    test_article = relevant_articles[0]
+    print(f"\nKept {len(results)} articles\n")
 
-    print(
-        f"Testing article: {test_article['title']}"
-    )
-
-    print(
-        f"Source: {test_article['source_name']}"
-    )
-
-    print(
-        f"URL: {test_article['url']}"
-    )
-
-    print(
-        "\nAnalyzing article...\n"
-    )
-
-    # -----------------------------------------------------
-    # 7. Analyze with Gemini
-    # -----------------------------------------------------
-
-    try:
-
-        result = analyze_article(
-            test_article
-        )
-
-        # -------------------------------------------------
-        # 8. Display structured result
-        # -------------------------------------------------
-
-        print(
-            json.dumps(
-                result,
-                indent=2,
-                ensure_ascii=False
-            )
-        )
-
-    except GeminiQuotaError as error:
-
-        print(
-            f"Gemini quota error: {error}"
-        )
-
-    except Exception as error:
-
-        print(
-            f"Analysis failed: {error}"
-        )
+    for r in results:
+        print(f"{r['relevance_score']} {r['recommendation']} | {r['title']}")
 
 
 # ---------------------------------------------------------

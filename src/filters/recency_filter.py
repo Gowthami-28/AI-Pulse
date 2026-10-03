@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from typing import Dict, List
 
-RECENCY_HOURS = 48
+DEFAULT_RECENCY_HOURS = 48
 
 
 def parse_publication_date(date_string: str) -> datetime:
@@ -40,27 +40,27 @@ def parse_publication_date(date_string: str) -> datetime:
 def filter_recent_articles(
     articles: List[Dict[str, str]]
 ) -> List[Dict[str, str]]:
-    """Keep only articles published within the last 48 hours."""
+    """Keep articles newer than each source's max_age_hours."""
 
-    current_time = datetime.now(timezone.utc)
-    cutoff_time = current_time - timedelta(hours=RECENCY_HOURS)
-
+    now = datetime.now(timezone.utc)
     recent_articles = []
 
     for article in articles:
-        publication_date = article.get("publication_date", "")
+        hours = article.get("max_age_hours", DEFAULT_RECENCY_HOURS)
+        cutoff = now - timedelta(hours=hours)
+        raw_date = (
+            article.get("published_iso")
+            or article.get("publication_date", "")
+        )
 
         try:
-            published_time = parse_publication_date(publication_date)
-
-            if published_time >= cutoff_time:
-                recent_articles.append(article)
-
+            published = parse_publication_date(raw_date)
         except ValueError:
-            print(
-                f"Could not parse publication date: "
-                f"{publication_date}"
-            )
+            print(f"Skipping (bad date): {article.get('title')} | '{raw_date}'")
+            continue
+
+        if cutoff <= published <= now + timedelta(hours=1):
+            recent_articles.append(article)
 
     return recent_articles
 
