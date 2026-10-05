@@ -69,122 +69,74 @@ DESCRIPTION:
     articles_text = "\n".join(article_blocks)
 
     prompt = f"""
-You are the first-stage relevance screener for an
-AI Engineer learning digest.
+You are the first-stage relevance screener for an AI Engineer
+learning digest.
 
-Your job is NOT to decide whether an article is merely
-related to AI.
+Your job is NOT to decide whether the article contains enough
+technical detail to fully understand it.
 
-Your job is to decide whether an AI Engineer would gain
-meaningful, transferable technical learning from the article.
+Your job is to identify articles that LOOK PROMISING enough
+to justify fetching and performing a full analysis.
 
-Evaluate ONLY the title and description provided.
-Do not invent information that is not present.
+Evaluate ONLY the article title and description.
 
-ARTICLES:
+A promising article may be:
 
-{articles_text}
-
-Evaluate each article using the following criteria.
-
-HIGH-VALUE TECHNICAL LEARNING includes:
-
-- LLM or GenAI engineering
-- AI agents or agentic architectures
-- RAG, retrieval, embeddings, or vector databases
+- AI/ML/GenAI engineering
+- LLMs or multimodal models
+- AI agents or agentic systems
+- RAG and retrieval systems
 - model training or fine-tuning
 - inference or model serving
-- model evaluation
-- prompt engineering when technically meaningful
-- AI application architecture
+- evaluation or benchmarking
+- deployment
 - MLOps or LLMOps
-- deployment and production engineering
-- AI reliability, observability, or testing
-- practical AI engineering tools, frameworks, APIs, or architectures
-- concrete engineering methods that can transfer to other projects
+- AI infrastructure
+- practical AI engineering tools, frameworks, APIs,
+  architectures, or techniques
 
-IMPORTANT DISTINCTION:
+Important:
 
-An article being about an AI product does NOT automatically
-make it valuable.
+The title or description does NOT need to contain detailed
+implementation information.
 
-An article mentioning agents, LLMs, AI, NVIDIA, OpenAI,
-Gemini, or another AI company does NOT automatically
-deserve a high score.
+If the topic itself strongly suggests that the full article
+could contain useful technical information, give it a higher
+score and allow the full analyzer to investigate it.
 
-The article should provide evidence of something an AI Engineer
-could actually learn, such as:
+For example, these topics can be promising even when the
+description is brief:
 
-- a technical method
-- an architecture
-- an implementation approach
-- an engineering technique
-- an evaluation methodology
-- a deployment approach
-- a model-training or inference technique
-- a practical framework, API, or tool
+- fine-tuning a model
+- tracing AI agents
+- runtime controls for agents
+- deploying AI systems
+- RAG improvements
+- model evaluation
+- inference optimization
+- computer-use agents
+- agent architectures
+- AI development tools
 
-LOW-VALUE CONTENT:
+However, do NOT give a high score simply because an article
+mentions AI, ChatGPT, Gemini, OpenAI, or another AI product.
 
-Strongly reduce the score when the article is primarily:
+Lower scores should be used for:
 
-- a business announcement
-- a company or customer success story
-- a product launch with little technical detail
-- marketing or promotional material
-- a general AI announcement
-- a vague discussion of AI
-- a hardware announcement without useful AI engineering insight
-- a highly specialized infrastructure announcement with little
-  transferable value
-- an article whose title sounds technical but whose description
-  provides no evidence of technical learning
+- purely promotional announcements
+- business/customer stories
+- vague AI news with no apparent engineering relevance
+- unrelated infrastructure or hardware news
+- general company news
 
-SCORING RUBRIC:
+Articles:
 
-9-10:
-Exceptional learning value.
-Clearly provides important, transferable AI engineering
-knowledge or a strong technical method/architecture.
-
-7-8:
-Strong learning value.
-Clearly relevant to AI engineering and provides enough
-technical evidence to justify further analysis.
-
-5-6:
-Some AI/technical relevance, but limited learning value,
-limited evidence, or too specialized.
-
-3-4:
-Mostly announcement, marketing, business, product, or
-general AI content with little technical learning.
-
-1-2:
-Not meaningfully useful for an AI Engineer learning digest.
-
-IMPORTANT:
-
-A score of 7 or higher should be given ONLY when the title
-and description provide reasonable evidence of meaningful
-technical learning value.
-
-If the description is empty or extremely vague, do not infer
-technical details from the title alone.
-
-For each article, determine:
-
-1. screen_score
-2. is_relevant
-3. concise reason
-
-is_relevant must be TRUE only when the article provides
-meaningful technical learning value for an AI Engineer.
+{articles_text}
 
 Return ONLY valid JSON.
 
 The response must be a JSON array containing exactly one
-object for every article.
+object for each article.
 
 Example:
 
@@ -193,29 +145,30 @@ Example:
         "article_index": 0,
         "screen_score": 8,
         "is_relevant": true,
-        "reason": "Provides a concrete approach to improving RAG retrieval."
+        "reason": "The topic is strongly related to practical AI agent engineering."
     }},
     {{
         "article_index": 1,
         "screen_score": 3,
         "is_relevant": false,
-        "reason": "Primarily a product announcement with little technical detail."
+        "reason": "Primarily a business announcement with little apparent engineering value."
     }}
 ]
 
-RULES:
+Rules:
 
-1. article_index must match the ARTICLE number.
+1. article_index must match the ARTICLE number provided.
 2. screen_score must be an integer from 1 to 10.
 3. is_relevant must be true or false.
-4. Use ONLY the title and description.
+4. Use only the title and description.
 5. Do not invent article facts.
-6. Score 7 or higher only when meaningful technical learning
-   is supported by the available information.
-7. is_relevant must be false when the article lacks enough
-   evidence of useful technical learning.
-8. Keep the reason concise.
-9. Return exactly one result for every article.
+6. A score of 7 or higher means the article looks promising
+   enough to receive full article analysis.
+7. A score below 7 means it should be skipped.
+8. Do not require detailed technical information in the
+   title or description to give a score of 7 or higher.
+9. Keep the reason concise.
+10. Return exactly one result for every article.
 """
 
     try:

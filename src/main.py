@@ -20,7 +20,7 @@ from src.email_builder import build_email
 from src.email_sender import send_email
 
 
-SCREEN_THRESHOLD = 7
+SCREEN_THRESHOLD = 8
 
 
 def main() -> None:

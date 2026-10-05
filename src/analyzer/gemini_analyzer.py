@@ -34,6 +34,8 @@ if not api_key:
 
 MODEL = "gemini-3.5-flash-lite"
 
+MAX_ARTICLE_CONTENT_CHARS = 8000
+
 
 # ---------------------------------------------------------
 # Gemini client
@@ -471,7 +473,7 @@ def analyze_article(article: Dict[str, str]) -> Dict[str, Any]:
             f"Could not extract article content: {article['url']}"
         )
 
-    article_content = article_content[:12000]
+    article_content = article_content[:MAX_ARTICLE_CONTENT_CHARS]
 
     # replace() instead of .format() because the prompt
     # itself contains JSON braces.
@@ -489,6 +491,7 @@ def analyze_article(article: Dict[str, str]) -> Dict[str, Any]:
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.2,
+                max_output_tokens=1500,
             ),
         )
     except Exception as error:
@@ -525,83 +528,6 @@ def analyze_article(article: Dict[str, str]) -> Dict[str, Any]:
 
     return result
 
-
-# ---------------------------------------------------------
-# Cheap pre-screen (title + description only)
-# ---------------------------------------------------------
-
-SCREEN_PROMPT = """Rate 1-10 the technical learning value of this article
-for an aspiring AI/ML engineer, using ONLY the title and description.
-Concepts (RAG, fine-tuning, MCP, agents, evaluation), model releases
-with concrete specs, and engineering write-ups score 6+.
-Funding, partnerships, events, pricing, customer stories, and generic
-product news score 1-3.
-Return JSON only: {"score": 1, "reason": "one sentence"}"""
-
-
-def screen_article(article: Dict[str, str]) -> int:
-    prompt = (
-        f"{SCREEN_PROMPT}\n\n"
-        f"Title: {article.get('title', '')}\n"
-        f"Description: {article.get('description', '')}"
-    )
-
-    try:
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.2,
-            ),
-        )
-        return int(json.loads(response.text).get("score", 0))
-
-    except Exception as error:
-        text = str(error).lower()
-        if "429" in text or "quota" in text or "resource_exhausted" in text:
-            raise GeminiQuotaError(str(error)) from error
-        print(f"Screen failed for '{article.get('title')}': {error}")
-        return 0
-
-
-# ---------------------------------------------------------
-# Screen, analyze, and keep only good articles
-# ---------------------------------------------------------
-
-def analyze_relevant(articles, screen_min=6, keep_min=7):
-    results = []
-
-    for article in articles:
-        time.sleep(8)
-        try:
-            screen = screen_article(article)
-
-            if screen < screen_min:
-                print(f"Screened out ({screen}): {article['title']}")
-                continue
-
-            result = analyze_article(article)
-
-        except GeminiQuotaError as error:
-            print(f"Quota hit, stopping: {error}")
-            break
-
-        except Exception as error:
-            print(f"Failed '{article['title']}': {error}")
-            continue
-
-        if result["relevance_score"] < keep_min:
-            print(f"Dropped ({result['relevance_score']}): {article['title']}")
-            continue
-
-        result["url"] = article["url"]
-        results.append(result)
-
-    results.sort(key=lambda r: r["relevance_score"], reverse=True)
-    return results
-
-
 # ---------------------------------------------------------
 # Main pipeline
 # ---------------------------------------------------------
@@ -633,5 +559,3 @@ def main() -> None:
 # Entry point
 # ---------------------------------------------------------
 
-if __name__ == "__main__":
-    main()
