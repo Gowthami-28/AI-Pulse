@@ -10,5 +10,8 @@ python-dotenv
 # Article content extraction
 trafilatura
 
+# HTTP requests
+requests
+
 # Email delivery
 resend
