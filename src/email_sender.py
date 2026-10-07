@@ -18,18 +18,3 @@ def send_email(email_content):
     email = resend.Emails.send(params)
 
     return email
-
-
-
-if __name__ == "__main__":
-    test_content = """Hello from AI Pulse!
-
-This is a test of the email sender.
-
-The email sender is working correctly.
-"""
-
-    result = send_email(test_content)
-
-    print("Email sent successfully!")
-    print(result)    

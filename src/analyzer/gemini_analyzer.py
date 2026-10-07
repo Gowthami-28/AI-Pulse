@@ -1,6 +1,5 @@
 import json
 import os
-import time
 from typing import Any, Dict
 
 from dotenv import load_dotenv
@@ -527,35 +526,4 @@ def analyze_article(article: Dict[str, str]) -> Dict[str, Any]:
     result["recommendation"] = recommendation_from_score(score)
 
     return result
-
-# ---------------------------------------------------------
-# Main pipeline
-# ---------------------------------------------------------
-
-def main() -> None:
-    articles = fetch_articles()
-    recent = filter_recent_articles(articles)
-    unique = remove_duplicates(recent)
-    relevant = filter_articles(unique)
-
-    print(
-        f"Collected {len(articles)} | recent {len(recent)} | "
-        f"unique {len(unique)} | keyword-relevant {len(relevant)}"
-    )
-
-    if not relevant:
-        print("No relevant recent articles found.")
-        return
-
-    results = analyze_relevant(relevant)
-
-    print(f"\nKept {len(results)} articles\n")
-
-    for r in results:
-        print(f"{r['relevance_score']} {r['recommendation']} | {r['title']}")
-
-
-# ---------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------
 

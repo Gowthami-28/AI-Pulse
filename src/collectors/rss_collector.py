@@ -79,10 +79,3 @@ def fetch_articles() -> List[Dict[str, str]]:
             })
 
     return articles
-
-if __name__ == "__main__":
-    articles = fetch_articles()
-
-    print(f"\nTotal articles collected: {len(articles)}")
-
-    print_articles(articles)

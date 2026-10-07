@@ -79,26 +79,3 @@ def filter_articles(
             print(f"Rejected by keywords: {title}")
 
     return kept
-
-
-if __name__ == "__main__":
-    from src.collectors.rss_collector import fetch_articles
-    from src.filters.recency_filter import filter_recent_articles
-    from src.filters.deduplication_filter import remove_duplicates
-
-    articles = fetch_articles()
-    recent_articles = filter_recent_articles(articles)
-    unique_articles = remove_duplicates(recent_articles)
-    relevant_articles = filter_articles(unique_articles)
-
-    print(f"Total articles collected: {len(articles)}")
-    print(f"Recent articles: {len(recent_articles)}")
-    print(f"Unique recent articles: {len(unique_articles)}")
-    print(f"Relevant articles: {len(relevant_articles)}")
-
-    for article in relevant_articles:
-        print(
-            f"\n{article['title']}"
-            f"\nSource: {article['source_name']}"
-            f"\nMatched keywords: {article.get('matched_keywords', '')}"
-        )

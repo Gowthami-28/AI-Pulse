@@ -1,5 +1,4 @@
 from src.collectors.rss_collector import fetch_articles
-from src.collectors.article_extractor import extract_article_content
 from src.filters.relevance_filter import filter_articles
 from src.filters.recency_filter import filter_recent_articles
 from src.filters.deduplication_filter import remove_duplicates

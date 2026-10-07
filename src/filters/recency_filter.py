@@ -65,19 +65,3 @@ def filter_recent_articles(
     return recent_articles
 
 
-if __name__ == "__main__":
-    from src.collectors.rss_collector import fetch_articles
-
-    articles = fetch_articles()
-
-    recent_articles = filter_recent_articles(articles)
-
-    print(f"Total articles collected: {len(articles)}")
-    print(f"Recent articles: {len(recent_articles)}")
-
-    for article in recent_articles:
-        print(
-            article["title"],
-            "|",
-            article["publication_date"]
-        )

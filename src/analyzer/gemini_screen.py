@@ -3,6 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 
 
 load_dotenv()
@@ -162,11 +163,11 @@ Rules:
 3. is_relevant must be true or false.
 4. Use only the title and description.
 5. Do not invent article facts.
-6. A score of 7 or higher means the article looks promising
+6. A score of 8 or higher means the article looks promising
    enough to receive full article analysis.
-7. A score below 7 means it should be skipped.
+7. A score below 8 means it should be skipped.
 8. Do not require detailed technical information in the
-   title or description to give a score of 7 or higher.
+   title or description to give a score of 8 or higher.
 9. Keep the reason concise.
 10. Return exactly one result for every article.
 """
@@ -176,6 +177,10 @@ Rules:
         response = client.models.generate_content(
             model="gemini-3.5-flash-lite",
             contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.2,
+            )    
         )
 
         results = _parse_json_response(
