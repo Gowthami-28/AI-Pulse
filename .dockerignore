@@ -1,0 +1,26 @@
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+venv/
+
+# Git
+.git/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+
+# Local data
+data/*
+
+# Development tools
+.vscode/
+.idea/
+
+# Test artifacts
+.pytest_cache/
