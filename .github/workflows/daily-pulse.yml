@@ -1,0 +1,30 @@
+
+name: AI Pulse
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run-ai-pulse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t ai-pulse:latest .
+
+      - name: Run AI Pulse
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          docker run --rm \
+            -e GEMINI_API_KEY \
+            -e RESEND_API_KEY \
+            ai-pulse:latest
