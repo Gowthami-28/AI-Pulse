@@ -222,17 +222,30 @@ The pipeline collects articles, filters and screens them, performs full analysis
 ## Current Status
 
 - Core AI Pulse pipeline completed
-- Multi-source RSS collection implemented
+- Multi-source RSS article collection implemented
 - Recency, deduplication, and relevance filtering implemented
-- Gemini screening and full article analysis implemented
-- Article ranking implemented
-- Email delivery through Resend implemented
-- Local end-to-end pipeline tested successfully
-- Docker and Azure deployment planned next
+- Gemini-based article screening and full article analysis implemented
+- Article ranking and learning recommendations implemented
+- Email generation and delivery through Resend implemented
+- Docker containerization completed and tested
+- GitHub Actions workflow configured for cloud execution
+- Daily workflow scheduled for 9:00 AM IST
+- End-to-end pipeline tested successfully in GitHub Actions
+
+## Deployment Architecture
+
+1. GitHub Actions triggers the workflow on its daily schedule.
+2. The workflow builds the Docker image.
+3. The container runs the AI Pulse pipeline.
+4. Articles are collected, filtered, screened, analyzed, and ranked.
+5. An email containing the daily AI/ML learning update is sent through Resend.
+
+The workflow can also be triggered manually from GitHub Actions.
 
 ## Future Improvements
 
-- Dockerize the application
-- Deploy the scheduled pipeline using Azure Container Apps Jobs
-- Add further monitoring and reliability improvements
+- Improve error handling and reliability for Gemini responses
+- Add monitoring and clearer failure notifications
+- Refine article relevance and ranking quality
+- Review dependency versions and maintain the deployment configuration
 
